@@ -9,7 +9,6 @@ import { renderHook, act } from '@testing-library/react-native';
 import { useMdToPdf } from '../useMdToPdf';
 import { ErrorCode } from '../types';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { printToFileAsync: mockPrintToFileAsync } = require('expo-print');
 
 describe('useMdToPdf', () => {

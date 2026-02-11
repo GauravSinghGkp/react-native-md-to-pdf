@@ -49,7 +49,26 @@ async function requireExpoFileSystem(): Promise<{
   EncodingType: { Base64: string };
 }> {
   try {
-    return require('expo-file-system');
+    const fs = require('expo-file-system');
+
+    // Default copyAsync
+    let copyAsync = fs.copyAsync;
+
+    // Try to load legacy copyAsync to avoid deprecation warnings
+    try {
+      const legacy = require('expo-file-system/legacy');
+      if (legacy.copyAsync) {
+        copyAsync = legacy.copyAsync;
+      }
+    } catch {
+      // ignore
+    }
+
+    // Return the fs object but with the (potentially legacy) copyAsync override
+    return {
+      ...fs,
+      copyAsync,
+    };
   } catch {
     throw new MdToPdfError(
       ErrorCode.GENERATION_FAILED,

@@ -6,13 +6,15 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   Platform,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { useMdToPdf } from 'react-native-md-to-pdf';
+import * as Sharing from 'expo-sharing';
+import { Directory, File } from 'expo-file-system';
 
 const SAMPLE_MARKDOWN = `# react-native-md-to-pdf
 
@@ -68,6 +70,46 @@ export default function App() {
     }
   }, [markdown, convertToHtml]);
 
+  const saveToFiles = useCallback(async (filePath: string) => {
+    try {
+      if (Platform.OS === 'android') {
+        const directory = await Directory.pickDirectoryAsync();
+        if (directory) {
+          const fileName = `markdown-export-${Date.now()}.pdf`;
+
+          // Read source file as base64 using modern File API
+          const sourceFile = new File(filePath);
+          const base64 = await sourceFile.base64();
+
+          // Convert base64 to Uint8Array
+          // Expo/Hermes usually supports atob, otherwise we'd need a polyfill.
+          // For safety in this example, we assume atob is available or use a simple polyfill logic if needed.
+          const binaryString = global.atob
+            ? global.atob(base64)
+            : Buffer.from(base64, 'base64').toString('binary');
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          const newFile = directory.createFile(fileName, 'application/pdf');
+          newFile.write(bytes);
+
+          Alert.alert('Success', 'PDF saved to selected directory');
+        }
+      } else {
+        await Sharing.shareAsync(filePath, { mimeType: 'application/pdf' });
+      }
+    } catch (error) {
+      console.log('Save to files process failed or cancelled', error);
+      Alert.alert(
+        'Error Saving',
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }, []);
+
   const handleGeneratePdf = useCallback(async () => {
     try {
       const result = await convertToPdf(markdown, {
@@ -77,13 +119,27 @@ export default function App() {
 
       Alert.alert(
         '✅ PDF Generated!',
-        `Saved to:\n${result.filePath}\n\nPages: ${result.pageCount}`
+        `Saved to cache: ${result.filePath}\n\nWhat would you like to do?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Share',
+            onPress: () =>
+              Sharing.shareAsync(result.filePath, {
+                mimeType: 'application/pdf',
+              }),
+          },
+          {
+            text: Platform.OS === 'android' ? 'Save to Files' : 'Save/Share',
+            onPress: () => saveToFiles(result.filePath),
+          },
+        ]
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert('❌ PDF Error', message);
     }
-  }, [markdown, convertToPdf]);
+  }, [markdown, convertToPdf, saveToFiles]);
 
   const handleClear = useCallback(() => {
     setMarkdown('');
