@@ -84,8 +84,18 @@
     "typescript": "^5.9.2"
   },
   "peerDependencies": {
+    "expo-file-system": ">=17.0.0",
+    "expo-print": ">=13.0.0",
     "react": "*",
     "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo-file-system": {
+      "optional": true
+    },
+    "expo-print": {
+      "optional": true
+    }
   },
   "workspaces": [
     "example"
@@ -121,7 +131,11 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^expo-print$": "<rootDir>/src/__mocks__/expo-print.ts",
+      "^expo-file-system$": "<rootDir>/src/__mocks__/expo-file-system.ts"
+    }
   },
   "commitlint": {
     "extends": [

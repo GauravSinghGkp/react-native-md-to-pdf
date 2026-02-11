@@ -1,6 +1,7 @@
 import {
   convertMarkdownToHtml,
   buildStylesheet,
+  buildPageCss,
   wrapHtmlDocument,
   mergeTheme,
   DEFAULT_THEME,
@@ -384,5 +385,40 @@ describe('MdToPdfError', () => {
     expect(err.code).toBe(ErrorCode.CONVERSION_FAILED);
     expect(err.message).toBe('oops');
     expect(err.name).toBe('MdToPdfError');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// buildPageCss
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('buildPageCss', () => {
+  it('returns empty string when no options given', () => {
+    expect(buildPageCss()).toBe('');
+    expect(buildPageCss(undefined)).toBe('');
+  });
+
+  it('generates @page CSS with default A4 size', () => {
+    const css = buildPageCss({});
+    expect(css).toContain('@page');
+    expect(css).toContain('210mm 297mm');
+    expect(css).toContain('margin:');
+  });
+
+  it('supports LETTER page size', () => {
+    const css = buildPageCss({ pageSize: 'LETTER' });
+    expect(css).toContain('8.5in 11in');
+  });
+
+  it('supports landscape orientation', () => {
+    const css = buildPageCss({ orientation: 'landscape' });
+    expect(css).toContain('landscape');
+  });
+
+  it('applies custom margins', () => {
+    const css = buildPageCss({
+      margins: { top: '10mm', bottom: '10mm' },
+    });
+    expect(css).toContain('10mm');
   });
 });

@@ -3,7 +3,12 @@
  * Default theme, stylesheet builder, and HTML document wrapper.
  */
 
-import type { ThemeColors, ThemeConfig } from './types';
+import type {
+  MarginConfig,
+  PdfOptions,
+  ThemeColors,
+  ThemeConfig,
+} from './types';
 
 // ─── Default Theme ──────────────────────────────────────────────────────────
 
@@ -195,19 +200,72 @@ export function buildStylesheet(theme?: ThemeConfig): string {
 </style>`;
 }
 
+// ─── Page Size Map ──────────────────────────────────────────────────────────
+
+/** CSS page size values for each supported page size. */
+const PAGE_SIZE_MAP: Record<string, string> = {
+  A3: '297mm 420mm',
+  A4: '210mm 297mm',
+  A5: '148mm 210mm',
+  LEGAL: '8.5in 14in',
+  LETTER: '8.5in 11in',
+  TABLOID: '11in 17in',
+};
+
+/** Default margins for PDF output. */
+const DEFAULT_MARGINS: MarginConfig = {
+  top: '20mm',
+  right: '20mm',
+  bottom: '20mm',
+  left: '20mm',
+};
+
+// ─── @page CSS Builder ──────────────────────────────────────────────────────
+
+/**
+ * Build a `@page` CSS rule from PDF options.
+ *
+ * Controls page size, orientation, and margins in the generated PDF.
+ */
+export function buildPageCss(options?: PdfOptions): string {
+  if (!options) return '';
+
+  const parts: string[] = [];
+
+  // Page size + orientation
+  const size = PAGE_SIZE_MAP[options.pageSize ?? 'A4'] ?? PAGE_SIZE_MAP.A4!;
+  const orientation = options.orientation === 'landscape' ? ' landscape' : '';
+  parts.push(`size: ${size}${orientation};`);
+
+  // Margins
+  const m = { ...DEFAULT_MARGINS, ...options.margins };
+  parts.push(`margin: ${m.top} ${m.right} ${m.bottom} ${m.left};`);
+
+  return `<style>@page { ${parts.join(' ')} }</style>`;
+}
+
 // ─── HTML Document Wrapper ──────────────────────────────────────────────────
 
 /**
- * Wrap an HTML body fragment and a `<style>` block into a complete,
- * well-formed HTML5 document ready for PDF rendering.
+ * Wrap an HTML body fragment into a complete, well-formed HTML5 document
+ * ready for PDF rendering.
+ *
+ * @param bodyHtml - The HTML body content.
+ * @param css      - The `<style>` block from `buildStylesheet()`.
+ * @param pageCss  - Optional `@page` CSS from `buildPageCss()`.
  */
-export function wrapHtmlDocument(bodyHtml: string, css: string): string {
+export function wrapHtmlDocument(
+  bodyHtml: string,
+  css: string,
+  pageCss?: string
+): string {
+  const pageStyle = pageCss ? `\n  ${pageCss}` : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  ${css}
+  ${css}${pageStyle}
 </head>
 <body>
 ${bodyHtml}

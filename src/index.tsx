@@ -9,10 +9,14 @@
 // ── Conversion ──────────────────────────────────────────────────────────────
 export { convertMarkdownToHtml } from './converter';
 
+// ── PDF Generation ──────────────────────────────────────────────────────────
+export { generatePdf } from './pdfGenerator';
+
 // ── Styling ─────────────────────────────────────────────────────────────────
 export {
   DEFAULT_THEME,
   buildStylesheet,
+  buildPageCss,
   wrapHtmlDocument,
   mergeTheme,
 } from './styles';
