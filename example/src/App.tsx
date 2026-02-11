@@ -56,6 +56,7 @@ Try editing this markdown and press **Generate**!
 export default function App() {
   const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN);
   const [htmlOutput, setHtmlOutput] = useState('');
+  const [isCustomTheme, setIsCustomTheme] = useState(false);
 
   // Use the library hook
   const { convertToHtml, convertToPdf, isConverting } = useMdToPdf();
@@ -112,10 +113,33 @@ export default function App() {
 
   const handleGeneratePdf = useCallback(async () => {
     try {
-      const result = await convertToPdf(markdown, {
-        pageSize: 'A4',
+      const options = {
+        pageSize: 'A4' as const,
         fileName: `demo-${Date.now()}`,
-      });
+        ...(isCustomTheme && {
+          theme: {
+            fontFamily: 'Helvetica, sans-serif',
+            h1: {
+              color: '#FF3366',
+              borderBottom: '2px solid #FF3366',
+              paddingBottom: '10px',
+              fontSize: '32px',
+            },
+            h2: {
+              color: '#663399',
+              borderBottom: '1px dashed #663399',
+            },
+            code: {
+              backgroundColor: '#1E1E1E',
+              color: '#A9FF68',
+              borderRadius: '6px',
+              fontFamily: 'monospace',
+            },
+          },
+        }),
+      };
+
+      const result = await convertToPdf(markdown, options);
 
       Alert.alert(
         '✅ PDF Generated!',
@@ -139,7 +163,7 @@ export default function App() {
       const message = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert('❌ PDF Error', message);
     }
-  }, [markdown, convertToPdf, saveToFiles]);
+  }, [markdown, convertToPdf, saveToFiles, isCustomTheme]);
 
   const handleClear = useCallback(() => {
     setMarkdown('');
@@ -171,6 +195,24 @@ export default function App() {
             placeholder="Paste or type your markdown here…"
             placeholderTextColor="#999"
           />
+        </View>
+
+        {/* Options */}
+        <View style={styles.options}>
+          <TouchableOpacity
+            style={[styles.toggle, isCustomTheme && styles.toggleActive]}
+            onPress={() => setIsCustomTheme(!isCustomTheme)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[styles.checkbox, isCustomTheme && styles.checkboxActive]}
+            >
+              {isCustomTheme && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.toggleLabel}>
+              Use Custom Theme (Pink/Purple)
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Action Buttons */}
@@ -270,6 +312,45 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     borderWidth: 1,
     borderColor: '#2a2a4a',
+  },
+  options: {
+    marginBottom: 20,
+  },
+  toggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a2e',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2a2a4a',
+  },
+  toggleActive: {
+    borderColor: '#6c63ff',
+    backgroundColor: '#252540',
+  },
+  toggleLabel: {
+    color: '#e0e0e0',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#6c63ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: '#6c63ff',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   actions: {
     flexDirection: 'row',
