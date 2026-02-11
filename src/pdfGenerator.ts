@@ -8,7 +8,12 @@
  */
 
 import { convertMarkdownToHtml } from './converter';
-import { buildPageCss, buildStylesheet, wrapHtmlDocument } from './styles';
+import {
+  buildFontCss,
+  buildPageCss,
+  buildStylesheet,
+  wrapHtmlDocument,
+} from './styles';
 import type { PdfOptions, PdfResult } from './types';
 import { ErrorCode, MdToPdfError } from './types';
 
@@ -128,7 +133,8 @@ export async function generatePdf(
   // 2️⃣ Build the styled HTML document
   const css = buildStylesheet(options?.theme);
   const pageCss = buildPageCss(options);
-  const html = wrapHtmlDocument(bodyHtml, css, pageCss);
+  const fontCss = buildFontCss(options?.fonts);
+  const html = wrapHtmlDocument(bodyHtml, css, pageCss, fontCss);
 
   // 3️⃣ Resolve native dependencies
   const Print = await requireExpoPrint();

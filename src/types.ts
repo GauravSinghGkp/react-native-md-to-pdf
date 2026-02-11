@@ -51,6 +51,24 @@ export interface ThemeColors {
   tableHeaderBackground: string;
 }
 
+/** Standard CSS text properties for granular element styling. */
+export interface TextStyle {
+  color?: string;
+  fontSize?: string;
+  fontFamily?: string;
+  fontWeight?: string | number;
+  lineHeight?: string | number;
+  fontStyle?: 'normal' | 'italic' | 'oblique';
+  textDecoration?: string;
+  letterSpacing?: string;
+  textAlign?: 'left' | 'right' | 'center' | 'justify';
+  backgroundColor?: string;
+  padding?: string;
+  margin?: string;
+  border?: string;
+  borderRadius?: string;
+}
+
 /**
  * Theme configuration that controls the visual appearance of the generated
  * HTML / PDF output.
@@ -68,6 +86,21 @@ export interface ThemeConfig {
   codeFontFamily?: string;
   /** Color palette overrides. */
   colors?: Partial<ThemeColors>;
+
+  // Granular Element Styles
+  h1?: TextStyle;
+  h2?: TextStyle;
+  h3?: TextStyle;
+  h4?: TextStyle;
+  h5?: TextStyle;
+  h6?: TextStyle;
+  p?: TextStyle;
+  a?: TextStyle;
+  img?: TextStyle;
+  table?: TextStyle;
+  blockquote?: TextStyle;
+  code?: TextStyle;
+  pre?: TextStyle;
 }
 
 // ---------------------------------------------------------------------------
@@ -102,6 +135,11 @@ export interface PdfOptions {
    * @default false
    */
   base64?: boolean;
+  /**
+   * Custom fonts to embed via @font-face.
+   * Key is the font-family name, Value is the base64-encoded font file content.
+   */
+  fonts?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------

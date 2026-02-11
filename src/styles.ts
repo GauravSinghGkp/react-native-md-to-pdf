@@ -8,6 +8,7 @@ import type {
   PdfOptions,
   ThemeColors,
   ThemeConfig,
+  TextStyle,
 } from './types';
 
 // ─── Default Theme ──────────────────────────────────────────────────────────
@@ -69,6 +70,18 @@ export function buildStylesheet(theme?: ThemeConfig): string {
   const t = mergeTheme(theme);
   const c = t.colors;
 
+  // Helper to convert TextStyle object to CSS string
+  const toCss = (style?: TextStyle) => {
+    if (!style) return '';
+    return Object.entries(style)
+      .map(([k, v]) => {
+        if (v === undefined) return '';
+        const key = k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+        return `${key}: ${v};`;
+      })
+      .join(' ');
+  };
+
   return `<style>
   * {
     margin: 0;
@@ -95,22 +108,28 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     font-weight: 600;
     line-height: 1.25;
   }
-  h1 { font-size: 2em; border-bottom: 2px solid ${c.rule}; padding-bottom: 0.3em; }
-  h2 { font-size: 1.5em; border-bottom: 1px solid ${c.rule}; padding-bottom: 0.25em; }
-  h3 { font-size: 1.25em; }
-  h4 { font-size: 1em; }
-  h5 { font-size: 0.875em; }
-  h6 { font-size: 0.85em; color: ${c.blockquoteText}; }
+  h1 { font-size: 2em; border-bottom: 2px solid ${
+    c.rule
+  }; padding-bottom: 0.3em; ${toCss(theme?.h1)} }
+  h2 { font-size: 1.5em; border-bottom: 1px solid ${
+    c.rule
+  }; padding-bottom: 0.25em; ${toCss(theme?.h2)} }
+  h3 { font-size: 1.25em; ${toCss(theme?.h3)} }
+  h4 { font-size: 1em; ${toCss(theme?.h4)} }
+  h5 { font-size: 0.875em; ${toCss(theme?.h5)} }
+  h6 { font-size: 0.85em; color: ${c.blockquoteText}; ${toCss(theme?.h6)} }
 
   /* ── Paragraphs ──────────────────────────────────────────────────── */
   p {
     margin-bottom: 1em;
+    ${toCss(theme?.p)}
   }
 
   /* ── Links ───────────────────────────────────────────────────────── */
   a {
     color: ${c.link};
     text-decoration: none;
+    ${toCss(theme?.a)}
   }
   a:hover { text-decoration: underline; }
 
@@ -122,6 +141,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     color: ${c.code};
     padding: 0.15em 0.4em;
     border-radius: 4px;
+    ${toCss(theme?.code)}
   }
 
   pre {
@@ -130,6 +150,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     padding: 1em;
     overflow-x: auto;
     margin-bottom: 1em;
+    ${toCss(theme?.pre)}
   }
   pre code {
     background: none;
@@ -146,6 +167,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     color: ${c.blockquoteText};
     background: ${c.codeBackground};
     border-radius: 0 6px 6px 0;
+    ${toCss(theme?.blockquote)}
   }
   blockquote p { margin-bottom: 0; }
 
@@ -171,6 +193,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 1em;
+    ${toCss(theme?.table)}
   }
   th, td {
     border: 1px solid ${c.tableBorder};
@@ -191,6 +214,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     height: auto;
     border-radius: 6px;
     margin: 0.5em 0;
+    ${toCss(theme?.img)}
   }
 
   /* ── Strikethrough ───────────────────────────────────────────────── */
@@ -244,6 +268,38 @@ export function buildPageCss(options?: PdfOptions): string {
   return `<style>@page { ${parts.join(' ')} }</style>`;
 }
 
+// ─── Font CSS Builder ────────────────────────────────────────────────────────
+
+/**
+ * Build `@font-face` rules for custom fonts.
+ *
+ * @param fonts - Map of font-family name to base64 font content.
+ */
+export function buildFontCss(fonts?: Record<string, string>): string {
+  if (!fonts) return '';
+
+  return Object.entries(fonts)
+    .map(([family, base64]) => {
+      // Basic detection for format based on file content is hard without mime type,
+      // but commonly these are passed as full data URIs or raw base64.
+      // If raw base64, we assume ttf/otf/woff.
+      // However, typical usage expected is: 'data:font/ttf;base64,...' OR just base64.
+      // Let's assume standard base64 and use a generic format or try to infer.
+      // Actually, standard practice for this lib: user provides base64.
+      // We'll wrap it in `url('data:font/ttf;base64,${base64}')` if it doesn't have scheme.
+
+      const src = base64.startsWith('data:')
+        ? `url('${base64}')`
+        : `url('data:font/ttf;base64,${base64}')`;
+
+      return `@font-face {
+  font-family: '${family}';
+  src: ${src};
+}`;
+    })
+    .join('\n');
+}
+
 // ─── HTML Document Wrapper ──────────────────────────────────────────────────
 
 /**
@@ -253,18 +309,23 @@ export function buildPageCss(options?: PdfOptions): string {
  * @param bodyHtml - The HTML body content.
  * @param css      - The `<style>` block from `buildStylesheet()`.
  * @param pageCss  - Optional `@page` CSS from `buildPageCss()`.
+ * @param fontCss  - Optional `@font-face` CSS from `buildFontCss()`.
  */
 export function wrapHtmlDocument(
   bodyHtml: string,
   css: string,
-  pageCss?: string
+  pageCss?: string,
+  fontCss?: string
 ): string {
   const pageStyle = pageCss ? `\n  ${pageCss}` : '';
+  const fontStyle = fontCss ? `\n  <style>\n${fontCss}\n  </style>` : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${fontStyle}
   ${css}${pageStyle}
 </head>
 <body>
