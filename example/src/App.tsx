@@ -12,12 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import {
-  convertMarkdownToHtml,
-  buildStylesheet,
-  wrapHtmlDocument,
-  generatePdf,
-} from 'react-native-md-to-pdf';
+import { useMdToPdf } from 'react-native-md-to-pdf';
 
 const SAMPLE_MARKDOWN = `# react-native-md-to-pdf
 
@@ -33,9 +28,10 @@ A **powerful** library for converting *Markdown* to PDF.
 ## Code Example
 
 \`\`\`typescript
-import { generatePdf } from 'react-native-md-to-pdf';
+import { useMdToPdf } from 'react-native-md-to-pdf';
 
-const result = await generatePdf('# Hello World');
+const { convertToPdf } = useMdToPdf();
+const result = await convertToPdf('# Hello World');
 console.log(result.filePath);
 \`\`\`
 
@@ -58,34 +54,27 @@ Try editing this markdown and press **Generate**!
 export default function App() {
   const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN);
   const [htmlOutput, setHtmlOutput] = useState('');
-  const [isGenerated, setIsGenerated] = useState(false);
-  const [pdfPath, setPdfPath] = useState<string | null>(null);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  // Use the library hook
+  const { convertToHtml, convertToPdf, isConverting } = useMdToPdf();
 
   const handleGenerateHtml = useCallback(() => {
     try {
-      const bodyHtml = convertMarkdownToHtml(markdown);
-      const css = buildStylesheet();
-      const fullDoc = wrapHtmlDocument(bodyHtml, css);
+      const fullDoc = convertToHtml(markdown);
       setHtmlOutput(fullDoc);
-      setIsGenerated(true);
-      setPdfPath(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       setHtmlOutput(`Error: ${message}`);
-      setIsGenerated(true);
     }
-  }, [markdown]);
+  }, [markdown, convertToHtml]);
 
   const handleGeneratePdf = useCallback(async () => {
-    setIsGeneratingPdf(true);
-    setPdfPath(null);
     try {
-      const result = await generatePdf(markdown, {
+      const result = await convertToPdf(markdown, {
         pageSize: 'A4',
         fileName: `demo-${Date.now()}`,
       });
-      setPdfPath(result.filePath);
+
       Alert.alert(
         '✅ PDF Generated!',
         `Saved to:\n${result.filePath}\n\nPages: ${result.pageCount}`
@@ -93,16 +82,12 @@ export default function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert('❌ PDF Error', message);
-    } finally {
-      setIsGeneratingPdf(false);
     }
-  }, [markdown]);
+  }, [markdown, convertToPdf]);
 
   const handleClear = useCallback(() => {
     setMarkdown('');
     setHtmlOutput('');
-    setIsGenerated(false);
-    setPdfPath(null);
   }, []);
 
   return (
@@ -145,9 +130,9 @@ export default function App() {
             style={[styles.generateBtn, styles.pdfBtn]}
             onPress={handleGeneratePdf}
             activeOpacity={0.8}
-            disabled={isGeneratingPdf}
+            disabled={isConverting}
           >
-            {isGeneratingPdf ? (
+            {isConverting ? (
               <ActivityIndicator color="#ffffff" size="small" />
             ) : (
               <Text style={styles.generateBtnText}>📄 PDF</Text>
@@ -162,21 +147,8 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* PDF Result */}
-        {pdfPath && (
-          <View style={styles.section}>
-            <Text style={styles.label}>PDF Output</Text>
-            <View style={styles.resultCard}>
-              <Text style={styles.resultIcon}>✅</Text>
-              <Text style={styles.resultPath} selectable>
-                {pdfPath}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* HTML Preview */}
-        {isGenerated && (
+        {!!htmlOutput && (
           <View style={styles.section}>
             <Text style={styles.label}>Generated HTML</Text>
             <View style={styles.preview}>
@@ -279,26 +251,6 @@ const styles = StyleSheet.create({
     color: '#8888aa',
     fontSize: 18,
     fontWeight: '600',
-  },
-  resultCard: {
-    backgroundColor: '#0d2818',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1a5c32',
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  resultIcon: {
-    fontSize: 18,
-  },
-  resultPath: {
-    color: '#4ade80',
-    fontSize: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    flex: 1,
-    lineHeight: 18,
   },
   preview: {
     backgroundColor: '#1a1a2e',

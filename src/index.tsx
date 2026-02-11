@@ -12,6 +12,14 @@ export { convertMarkdownToHtml } from './converter';
 // ── PDF Generation ──────────────────────────────────────────────────────────
 export { generatePdf } from './pdfGenerator';
 
+// ── Hook ────────────────────────────────────────────────────────────────────
+export { useMdToPdf } from './useMdToPdf';
+export type { UseMdToPdfReturn, ConversionStatus } from './useMdToPdf';
+
+// ── Component ───────────────────────────────────────────────────────────────
+export { MdToPdfView } from './MdToPdfView';
+export type { MdToPdfViewProps, MdToPdfViewRef } from './MdToPdfView';
+
 // ── Styling ─────────────────────────────────────────────────────────────────
 export {
   DEFAULT_THEME,
