@@ -1,0 +1,216 @@
+/**
+ * react-native-md-to-pdf
+ * Default theme, stylesheet builder, and HTML document wrapper.
+ */
+
+import type { ThemeColors, ThemeConfig } from './types';
+
+// ─── Default Theme ──────────────────────────────────────────────────────────
+
+const DEFAULT_COLORS: ThemeColors = {
+  text: '#1a1a2e',
+  background: '#ffffff',
+  heading: '#16213e',
+  code: '#e06c75',
+  codeBackground: '#f5f5f7',
+  link: '#0a84ff',
+  blockquote: '#6c63ff',
+  blockquoteText: '#4a4a68',
+  rule: '#d1d5db',
+  tableBorder: '#e2e8f0',
+  tableHeaderBackground: '#f8fafc',
+};
+
+/** Sensible default theme with a clean, readable aesthetic. */
+export const DEFAULT_THEME: Required<
+  Pick<ThemeConfig, 'fontFamily' | 'fontSize' | 'lineHeight' | 'codeFontFamily'>
+> & { colors: ThemeColors } = {
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  fontSize: '16px',
+  lineHeight: '1.6',
+  codeFontFamily:
+    '"SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace',
+  colors: DEFAULT_COLORS,
+};
+
+// ─── Theme Merging ──────────────────────────────────────────────────────────
+
+/** Deep-merge user overrides on top of the default theme. */
+export function mergeTheme(overrides?: ThemeConfig): typeof DEFAULT_THEME {
+  if (!overrides) return DEFAULT_THEME;
+
+  return {
+    fontFamily: overrides.fontFamily ?? DEFAULT_THEME.fontFamily,
+    fontSize: overrides.fontSize ?? DEFAULT_THEME.fontSize,
+    lineHeight: overrides.lineHeight ?? DEFAULT_THEME.lineHeight,
+    codeFontFamily: overrides.codeFontFamily ?? DEFAULT_THEME.codeFontFamily,
+    colors: {
+      ...DEFAULT_THEME.colors,
+      ...overrides.colors,
+    },
+  };
+}
+
+// ─── Stylesheet Builder ─────────────────────────────────────────────────────
+
+/**
+ * Produce a `<style>` block from a (possibly partial) theme configuration.
+ *
+ * The resulting CSS covers every supported markdown element, yielding a
+ * polished, GitHub-inspired look without external stylesheets.
+ */
+export function buildStylesheet(theme?: ThemeConfig): string {
+  const t = mergeTheme(theme);
+  const c = t.colors;
+
+  return `<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: ${t.fontFamily};
+    font-size: ${t.fontSize};
+    line-height: ${t.lineHeight};
+    color: ${c.text};
+    background: ${c.background};
+    padding: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* ── Headings ────────────────────────────────────────────────────── */
+  h1, h2, h3, h4, h5, h6 {
+    color: ${c.heading};
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  h1 { font-size: 2em; border-bottom: 2px solid ${c.rule}; padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid ${c.rule}; padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  h5 { font-size: 0.875em; }
+  h6 { font-size: 0.85em; color: ${c.blockquoteText}; }
+
+  /* ── Paragraphs ──────────────────────────────────────────────────── */
+  p {
+    margin-bottom: 1em;
+  }
+
+  /* ── Links ───────────────────────────────────────────────────────── */
+  a {
+    color: ${c.link};
+    text-decoration: none;
+  }
+  a:hover { text-decoration: underline; }
+
+  /* ── Code ─────────────────────────────────────────────────────────── */
+  code {
+    font-family: ${t.codeFontFamily};
+    font-size: 0.9em;
+    background: ${c.codeBackground};
+    color: ${c.code};
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+
+  pre {
+    background: ${c.codeBackground};
+    border-radius: 8px;
+    padding: 1em;
+    overflow-x: auto;
+    margin-bottom: 1em;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.875em;
+    color: ${c.text};
+  }
+
+  /* ── Blockquotes ─────────────────────────────────────────────────── */
+  blockquote {
+    border-left: 4px solid ${c.blockquote};
+    padding: 0.6em 1em;
+    margin: 0 0 1em 0;
+    color: ${c.blockquoteText};
+    background: ${c.codeBackground};
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin-bottom: 0; }
+
+  /* ── Lists ───────────────────────────────────────────────────────── */
+  ul, ol {
+    margin-bottom: 1em;
+    padding-left: 2em;
+  }
+  li {
+    margin-bottom: 0.35em;
+  }
+
+  /* ── Horizontal Rule ─────────────────────────────────────────────── */
+  hr {
+    border: none;
+    height: 2px;
+    background: ${c.rule};
+    margin: 1.5em 0;
+  }
+
+  /* ── Tables ──────────────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1em;
+  }
+  th, td {
+    border: 1px solid ${c.tableBorder};
+    padding: 0.5em 0.75em;
+    text-align: left;
+  }
+  th {
+    background: ${c.tableHeaderBackground};
+    font-weight: 600;
+  }
+  tbody tr:nth-child(even) {
+    background: ${c.tableHeaderBackground};
+  }
+
+  /* ── Images ──────────────────────────────────────────────────────── */
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 0.5em 0;
+  }
+
+  /* ── Strikethrough ───────────────────────────────────────────────── */
+  del {
+    color: ${c.blockquoteText};
+  }
+</style>`;
+}
+
+// ─── HTML Document Wrapper ──────────────────────────────────────────────────
+
+/**
+ * Wrap an HTML body fragment and a `<style>` block into a complete,
+ * well-formed HTML5 document ready for PDF rendering.
+ */
+export function wrapHtmlDocument(bodyHtml: string, css: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${css}
+</head>
+<body>
+${bodyHtml}
+</body>
+</html>`;
+}
