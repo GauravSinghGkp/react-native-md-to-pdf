@@ -64,9 +64,20 @@ export interface TextStyle {
   textAlign?: 'left' | 'right' | 'center' | 'justify';
   backgroundColor?: string;
   padding?: string;
+  paddingTop?: string;
+  paddingRight?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
   margin?: string;
   border?: string;
+  borderTop?: string;
+  borderRight?: string;
+  borderBottom?: string;
+  borderLeft?: string;
   borderRadius?: string;
+  width?: string;
+  height?: string;
+  display?: string;
 }
 
 /**
