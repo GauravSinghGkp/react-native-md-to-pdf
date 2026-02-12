@@ -43,7 +43,13 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "markdown",
+    "pdf",
+    "html",
+    "converter",
+    "expo",
+    "print"
   ],
   "repository": {
     "type": "git",
