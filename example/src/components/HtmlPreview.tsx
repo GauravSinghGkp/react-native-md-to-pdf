@@ -28,16 +28,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6c63ff',
+    color: '#666',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 8,
   },
   preview: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2a2a4a',
+    borderColor: '#e0e0e0',
     overflow: 'hidden',
   },
   previewScroll: {
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   previewText: {
-    color: '#c0c0d0',
+    color: '#333',
     fontSize: 12,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     lineHeight: 18,

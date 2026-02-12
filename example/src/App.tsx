@@ -3,19 +3,22 @@ import {
   Text,
   View,
   StyleSheet,
-  ScrollView,
   StatusBar,
-  SafeAreaView,
   Platform,
   Alert,
+  KeyboardAvoidingView,
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useMdToPdf } from 'react-native-md-to-pdf';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { MarkdownEditor } from './components/MarkdownEditor';
 import { HtmlPreview } from './components/HtmlPreview';
 import { Toolbar } from './components/Toolbar';
 import { savePdfToDevice } from './utils/fileHandler';
-import { CUSTOM_THEME } from './constants/theme';
+import { THEMES, type ThemeKey } from './constants/theme';
 
 const SAMPLE_MARKDOWN = `# react-native-md-to-pdf
 
@@ -57,30 +60,33 @@ Try editing this markdown and press **Generate**!
 export default function App() {
   const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN);
   const [htmlOutput, setHtmlOutput] = useState('');
-  const [isCustomTheme, setIsCustomTheme] = useState(false);
+  const [showHtmlModal, setShowHtmlModal] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<ThemeKey | undefined>(
+    undefined
+  );
 
   // Use the library hook
   const { convertToHtml, convertToPdf, isConverting } = useMdToPdf();
 
   const handleGenerateHtml = useCallback(() => {
     try {
-      // Pass theme if custom theme is selected, otherwise undefined (default)
-      const theme = isCustomTheme ? CUSTOM_THEME : undefined;
+      const theme = selectedTheme ? THEMES[selectedTheme].config : undefined;
       const fullDoc = convertToHtml(markdown, theme);
       setHtmlOutput(fullDoc);
+      setShowHtmlModal(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      setHtmlOutput(`Error: ${message}`);
+      Alert.alert('Error', message);
     }
-  }, [markdown, convertToHtml, isCustomTheme]);
+  }, [markdown, convertToHtml, selectedTheme]);
 
   const handleGeneratePdf = useCallback(async () => {
     try {
       const options = {
         pageSize: 'A4' as const,
         fileName: `demo-${Date.now()}`,
-        ...(isCustomTheme && {
-          theme: CUSTOM_THEME,
+        ...(selectedTheme && {
+          theme: THEMES[selectedTheme].config,
         }),
       };
 
@@ -101,69 +107,114 @@ export default function App() {
       const message = error instanceof Error ? error.message : 'Unknown error';
       Alert.alert('❌ PDF Error', message);
     }
-  }, [markdown, convertToPdf, isCustomTheme]);
-
-  const handleClear = useCallback(() => {
-    setMarkdown('');
-    setHtmlOutput('');
-  }, []);
+  }, [markdown, convertToPdf, selectedTheme]);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaProvider>
+      <SafeAreaView
+        style={styles.safe}
+        edges={['top', 'left', 'right', 'bottom']}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>📄 MD → PDF</Text>
-          <Text style={styles.headerSub}>react-native-md-to-pdf demo</Text>
-        </View>
+        <StatusBar barStyle="dark-content" />
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>📄 MD → PDF</Text>
+              <Text style={styles.headerSub}>react-native-md-to-pdf demo</Text>
+            </View>
 
-        <MarkdownEditor value={markdown} onChange={setMarkdown} />
+            <MarkdownEditor value={markdown} onChange={setMarkdown} />
 
-        <Toolbar
-          onGenerateHtml={handleGenerateHtml}
-          onGeneratePdf={handleGeneratePdf}
-          onClear={handleClear}
-          isConverting={isConverting}
-          isCustomTheme={isCustomTheme}
-          onToggleTheme={() => setIsCustomTheme(!isCustomTheme)}
-        />
+            <Toolbar
+              onGenerateHtml={handleGenerateHtml}
+              onGeneratePdf={handleGeneratePdf}
+              isConverting={isConverting}
+              selectedTheme={selectedTheme}
+              onSelectTheme={setSelectedTheme}
+            />
+          </View>
+        </KeyboardAvoidingView>
 
-        <HtmlPreview html={htmlOutput} />
-      </ScrollView>
-    </SafeAreaView>
+        {/* HTML Preview Modal */}
+        <Modal
+          visible={showHtmlModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <SafeAreaView style={styles.modalSafe} edges={['bottom']}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>HTML Preview</Text>
+              <TouchableOpacity
+                onPress={() => setShowHtmlModal(false)}
+                style={styles.closeBtn}
+              >
+                <MaterialIcons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              <HtmlPreview html={htmlOutput} />
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#0f0f1a',
+    backgroundColor: '#f8f9fa',
   },
-  scroll: {
+  container: {
     flex: 1,
   },
-  scrollContent: {
+  content: {
+    flex: 1,
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
   header: {
-    marginTop: Platform.OS === 'android' ? 30 : 10,
-    marginBottom: 24,
+    marginBottom: 16,
+    marginTop: Platform.OS === 'android' ? 10 : 0,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    color: '#ffffff',
+    color: '#2c3e50',
     letterSpacing: -0.5,
   },
   headerSub: {
-    fontSize: 14,
-    color: '#8888aa',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#7f8c8d',
+    marginTop: 2,
+  },
+  // Modal Styles
+  modalSafe: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2c3e50',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
   },
 });

@@ -5,7 +5,10 @@ import {
   StyleSheet,
   Platform,
   type TextInputProps,
+  TouchableOpacity,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface MarkdownEditorProps {
   value: string;
@@ -18,11 +21,38 @@ export function MarkdownEditor({
   onChange,
   style,
 }: MarkdownEditorProps) {
+  const handlePaste = async () => {
+    const text = await Clipboard.getStringAsync();
+    onChange(value + text);
+  };
+
+  const handleClear = () => {
+    onChange('');
+  };
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.label}>Markdown Input</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.label}>MARKDOWN INPUT</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={handlePaste}
+            style={styles.actionBtn}
+            hitSlop={8}
+          >
+            <MaterialIcons name="content-paste" size={20} color="#666" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleClear}
+            style={styles.actionBtn}
+            hitSlop={8}
+          >
+            <MaterialIcons name="close" size={20} color="#666" />
+          </TouchableOpacity>
+        </View>
+      </View>
       <TextInput
-        style={[styles.input, style]}
+        style={[styles.input, style, { textAlignVertical: 'top' }]}
         value={value}
         onChangeText={onChange}
         multiline
@@ -34,27 +64,39 @@ export function MarkdownEditor({
 }
 
 const styles = StyleSheet.create({
-  section: {
+  container: {
+    flex: 1,
     marginBottom: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6c63ff',
+    color: '#666',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  actionBtn: {
+    padding: 4,
   },
   input: {
-    backgroundColor: '#1a1a2e',
+    flex: 1,
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    color: '#e0e0e0',
+    color: '#333',
     fontSize: 14,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    minHeight: 200,
-    maxHeight: 300,
     borderWidth: 1,
-    borderColor: '#2a2a4a',
+    borderColor: '#e0e0e0',
   },
 });
