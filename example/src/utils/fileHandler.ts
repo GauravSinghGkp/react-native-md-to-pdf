@@ -21,6 +21,15 @@ function atob(input: string): string {
  *
  * @param filePath - Absolute path to the generated PDF file.
  */
+export async function sharePdf(filePath: string): Promise<void> {
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
+    await Sharing.shareAsync(filePath, { mimeType: 'application/pdf' });
+  } else {
+    Alert.alert('Error', 'Sharing is not available on this device');
+  }
+}
+
 export async function savePdfToDevice(filePath: string): Promise<void> {
   try {
     if (Platform.OS === 'android') {
@@ -46,7 +55,9 @@ export async function savePdfToDevice(filePath: string): Promise<void> {
         Alert.alert('Success', 'PDF saved to selected directory');
       }
     } else {
-      await Sharing.shareAsync(filePath, { mimeType: 'application/pdf' });
+      // On iOS, saving to files is often done via Share Sheet too, but we can keep it separate if needed.
+      // Or just map "Save" to "Share" on iOS if that's the standard flow.
+      await sharePdf(filePath);
     }
   } catch (error) {
     console.log('Save to files process failed or cancelled', error);

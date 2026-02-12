@@ -17,7 +17,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { MarkdownEditor } from './components/MarkdownEditor';
 import { HtmlPreview } from './components/HtmlPreview';
 import { Toolbar } from './components/Toolbar';
-import { savePdfToDevice } from './utils/fileHandler';
+import { savePdfToDevice, sharePdf } from './utils/fileHandler';
 import { THEMES, type ThemeKey } from './constants/theme';
 
 const SAMPLE_MARKDOWN = `# react-native-md-to-pdf
@@ -98,7 +98,11 @@ export default function App() {
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: Platform.OS === 'android' ? 'Save to Files' : 'Save/Share',
+            text: 'Share',
+            onPress: () => sharePdf(result.filePath),
+          },
+          {
+            text: 'Save to Files',
             onPress: () => savePdfToDevice(result.filePath),
           },
         ]
