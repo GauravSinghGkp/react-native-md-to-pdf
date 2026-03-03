@@ -2,6 +2,7 @@ import {
   convertMarkdownToHtml,
   buildStylesheet,
   buildPageCss,
+  buildFontCss,
   wrapHtmlDocument,
   mergeTheme,
   DEFAULT_THEME,
@@ -425,5 +426,118 @@ describe('buildPageCss', () => {
       margins: { top: '10mm', bottom: '10mm' },
     });
     expect(css).toContain('10mm');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// buildFontCss
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('buildFontCss', () => {
+  it('returns empty string when no fonts provided', () => {
+    expect(buildFontCss()).toBe('');
+    expect(buildFontCss(undefined)).toBe('');
+  });
+
+  it('wraps raw base64 in a data URI with ttf format', () => {
+    const css = buildFontCss({ 'Open Sans': 'AAECBA==' });
+    expect(css).toContain('@font-face');
+    expect(css).toContain("font-family: 'Open Sans'");
+    expect(css).toContain('data:font/ttf;base64,AAECBA==');
+  });
+
+  it('passes a full data URI through unchanged', () => {
+    const dataUri = 'data:font/woff2;base64,AAECBA==';
+    const css = buildFontCss({ 'Fira Code': dataUri });
+    expect(css).toContain(`url('${dataUri}')`);
+    // should NOT double-wrap
+    expect(css).not.toContain('data:font/ttf;base64,data:');
+  });
+
+  it('generates separate @font-face blocks for multiple fonts', () => {
+    const css = buildFontCss({
+      'Font A': 'AAEC==',
+      'Font B': 'BBFC==',
+    });
+    expect(css).toContain("font-family: 'Font A'");
+    expect(css).toContain("font-family: 'Font B'");
+    // Two separate @font-face declarations
+    expect((css.match(/@font-face/g) ?? []).length).toBe(2);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Converter edge cases (Phase 3 features)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('task list rendering', () => {
+  it('renders checked items with checked checkbox', () => {
+    const html = convertMarkdownToHtml('- [x] Done');
+    expect(html).toContain('task-list');
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain('checked');
+    expect(html).toContain('Done');
+  });
+
+  it('renders unchecked items without checked attribute', () => {
+    const html = convertMarkdownToHtml('- [ ] Todo');
+    expect(html).toContain('task-list');
+    expect(html).toContain('type="checkbox"');
+    expect(html).not.toContain('checked />');
+    expect(html).toContain('Todo');
+  });
+
+  it('handles mixed checked and unchecked items', () => {
+    const html = convertMarkdownToHtml(
+      '- [x] Done\n- [ ] Todo\n- [X] Also done'
+    );
+    // 2 checked, 1 unchecked
+    expect((html.match(/checked/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain('Also done');
+  });
+
+  it('treats task list as separate from plain unordered list', () => {
+    const html = convertMarkdownToHtml('- plain item');
+    expect(html).not.toContain('task-list');
+    expect(html).toContain('<ul>');
+  });
+});
+
+describe('setext heading rendering', () => {
+  it('renders === underline as h1', () => {
+    const html = convertMarkdownToHtml('My Title\n========');
+    expect(html).toContain('<h1>My Title</h1>');
+  });
+
+  it('renders --- underline as h2', () => {
+    const html = convertMarkdownToHtml('Subtitle\n--------');
+    expect(html).toContain('<h2>Subtitle</h2>');
+  });
+
+  it('does not confuse setext heading with horizontal rule', () => {
+    // A solo --- line is an <hr>, not a setext heading
+    const hr = convertMarkdownToHtml('---');
+    expect(hr).toContain('<hr');
+    expect(hr).not.toContain('<h2>');
+  });
+});
+
+describe('inline formatting edge cases', () => {
+  it('renders nested bold and italic', () => {
+    const html = parseInline('**bold _italic_ end**');
+    expect(html).toContain('<strong>');
+    expect(html).toContain('<em>');
+  });
+
+  it('renders adjacent image and link', () => {
+    const html = parseInline('![alt](img.png)[link](http://x.com)');
+    expect(html).toContain('<img');
+    expect(html).toContain('<a href="http://x.com">');
+  });
+
+  it('escapes single quotes in code block raw content', () => {
+    // escapeHtml runs on raw code block content before output
+    const html = convertMarkdownToHtml("```\nit's code\n```");
+    expect(html).toContain('&#39;');
   });
 });

@@ -25,6 +25,7 @@ export {
   DEFAULT_THEME,
   buildStylesheet,
   buildPageCss,
+  buildFontCss,
   wrapHtmlDocument,
   mergeTheme,
 } from './styles';
