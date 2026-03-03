@@ -212,6 +212,22 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     margin-bottom: 0.35em;
   }
 
+  /* ── Task lists ─────────────────────────────────────────────────── */
+  ul.task-list {
+    list-style: none;
+    padding-left: 0.5em;
+  }
+  .task-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    margin-bottom: 0.35em;
+  }
+  .task-item input[type="checkbox"] {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
   /* ── Horizontal Rule ─────────────────────────────────────────────── */
   hr {
     border: none;
@@ -342,21 +358,24 @@ export function buildFontCss(fonts?: Record<string, string>): string {
  * @param css      - The `<style>` block from `buildStylesheet()`.
  * @param pageCss  - Optional `@page` CSS from `buildPageCss()`.
  * @param fontCss  - Optional `@font-face` CSS from `buildFontCss()`.
+ * @param title    - Optional document title for `<title>` tag and PDF metadata.
  */
 export function wrapHtmlDocument(
   bodyHtml: string,
   css: string,
   pageCss?: string,
-  fontCss?: string
+  fontCss?: string,
+  title?: string
 ): string {
   const pageStyle = pageCss ? `\n  ${pageCss}` : '';
   const fontStyle = fontCss ? `\n  <style>\n${fontCss}\n  </style>` : '';
+  const titleTag = title ? `\n  <title>${title}</title>` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />${titleTag}
   ${fontStyle}
   ${css}${pageStyle}
 </head>

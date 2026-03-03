@@ -70,8 +70,10 @@ export default function App() {
 
   const handleGenerateHtml = useCallback(() => {
     try {
-      const theme = selectedTheme ? THEMES[selectedTheme].config : undefined;
-      const fullDoc = convertToHtml(markdown, theme);
+      const options = selectedTheme
+        ? { theme: THEMES[selectedTheme].config, pageSize: 'A4' as const }
+        : undefined;
+      const fullDoc = convertToHtml(markdown, options);
       setHtmlOutput(fullDoc);
       setShowHtmlModal(true);
     } catch (error) {

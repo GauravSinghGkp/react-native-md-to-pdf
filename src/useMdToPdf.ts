@@ -10,7 +10,7 @@ import { useCallback, useRef, useState } from 'react';
 import { convertMarkdownToHtml } from './converter';
 import { generatePdf } from './pdfGenerator';
 import { buildPageCss, buildStylesheet, wrapHtmlDocument } from './styles';
-import type { PdfOptions, PdfResult, ThemeConfig } from './types';
+import type { PdfOptions, PdfResult } from './types';
 import { ErrorCode, MdToPdfError } from './types';
 
 // ─── Hook State ─────────────────────────────────────────────────────────────
@@ -29,10 +29,12 @@ export interface UseMdToPdfReturn {
   /** The error that occurred (available when `status === 'error'`). */
   error: MdToPdfError | null;
   /**
-   * Convert markdown to HTML string.
+   * Convert markdown to a complete HTML document string.
+   * Accepts full `PdfOptions` so page size, margins and theme all match
+   * the eventual PDF output — ideal for feeding directly into a `WebView`.
    * This is synchronous and does not require expo-print.
    */
-  convertToHtml: (markdown: string, theme?: ThemeConfig) => string;
+  convertToHtml: (markdown: string, options?: PdfOptions) => string;
   /**
    * Generate a PDF from markdown.
    * Requires expo-print and expo-file-system to be installed.
@@ -72,11 +74,12 @@ export function useMdToPdf(): UseMdToPdfReturn {
   const callIdRef = useRef(0);
 
   const convertToHtml = useCallback(
-    (markdown: string, theme?: ThemeConfig): string => {
+    (markdown: string, options?: PdfOptions): string => {
       const bodyHtml = convertMarkdownToHtml(markdown);
-      const css = buildStylesheet(theme);
-      const pageCss = buildPageCss();
-      return wrapHtmlDocument(bodyHtml, css, pageCss);
+      const css = buildStylesheet(options?.theme);
+      const pageCss = buildPageCss(options);
+      const title = options?.fileName;
+      return wrapHtmlDocument(bodyHtml, css, pageCss, undefined, title);
     },
     []
   );

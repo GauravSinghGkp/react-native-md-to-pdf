@@ -36,10 +36,10 @@ describe('useMdToPdf', () => {
     expect(html).toContain('<style>');
   });
 
-  it('convertToHtml accepts a custom theme', () => {
+  it('convertToHtml accepts a custom theme via PdfOptions', () => {
     const { result } = renderHook(() => useMdToPdf());
     const html = result.current.convertToHtml('# Hello', {
-      colors: { text: '#ff0000' },
+      theme: { colors: { text: '#ff0000' } },
     });
     expect(html).toContain('#ff0000');
   });

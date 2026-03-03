@@ -4,13 +4,19 @@
  * and provides a one-tap PDF export.
  */
 
-import React, { useCallback, useImperativeHandle, useMemo } from 'react';
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
 import { convertMarkdownToHtml } from './converter';
 import { generatePdf } from './pdfGenerator';
 import { buildPageCss, buildStylesheet, wrapHtmlDocument } from './styles';
 import type { PdfOptions, PdfResult, ThemeConfig } from './types';
+import { ErrorCode, MdToPdfError } from './types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +41,12 @@ export interface MdToPdfViewProps {
    * ```
    */
   children?: (html: string) => React.ReactNode;
+  /** Called immediately when PDF generation begins. */
+  onGenerateStart?: () => void;
+  /** Called when PDF generation succeeds. */
+  onGenerateComplete?: (result: PdfResult) => void;
+  /** Called when PDF generation fails. */
+  onGenerateError?: (error: MdToPdfError) => void;
 }
 
 /** Methods exposed via the component ref. */
@@ -43,6 +55,8 @@ export interface MdToPdfViewRef {
   getHtml: () => string;
   /** Generate a PDF from the current markdown. */
   generatePdf: (options?: PdfOptions) => Promise<PdfResult>;
+  /** Whether a PDF generation is currently in progress. */
+  isConverting: boolean;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -55,7 +69,12 @@ export interface MdToPdfViewRef {
  * ```tsx
  * const ref = useRef<MdToPdfViewRef>(null);
  *
- * <MdToPdfView ref={ref} markdown="# Hello">
+ * <MdToPdfView
+ *   ref={ref}
+ *   markdown="# Hello"
+ *   onGenerateComplete={(result) => console.log(result.filePath)}
+ *   onGenerateError={(err) => console.error(err.code)}
+ * >
  *   {(html) => <WebView source={{ html }} />}
  * </MdToPdfView>
  *
@@ -64,7 +83,21 @@ export interface MdToPdfViewRef {
  * ```
  */
 export const MdToPdfView = React.forwardRef<MdToPdfViewRef, MdToPdfViewProps>(
-  function MdToPdfView({ markdown, theme, pdfOptions, style, children }, ref) {
+  function MdToPdfView(
+    {
+      markdown,
+      theme,
+      pdfOptions,
+      style,
+      children,
+      onGenerateStart,
+      onGenerateComplete,
+      onGenerateError,
+    },
+    ref
+  ) {
+    const [isConverting, setIsConverting] = useState(false);
+
     // Memoize the HTML to avoid re-computing on every render
     const html = useMemo(() => {
       if (!markdown) return '';
@@ -77,9 +110,34 @@ export const MdToPdfView = React.forwardRef<MdToPdfViewRef, MdToPdfViewProps>(
     const handleGeneratePdf = useCallback(
       async (overrideOptions?: PdfOptions): Promise<PdfResult> => {
         const mergedOptions = { ...pdfOptions, ...overrideOptions, theme };
-        return generatePdf(markdown, mergedOptions);
+        setIsConverting(true);
+        onGenerateStart?.();
+        try {
+          const result = await generatePdf(markdown, mergedOptions);
+          onGenerateComplete?.(result);
+          return result;
+        } catch (err: unknown) {
+          const mdError =
+            err instanceof MdToPdfError
+              ? err
+              : new MdToPdfError(
+                  ErrorCode.GENERATION_FAILED,
+                  err instanceof Error ? err.message : 'Unknown error'
+                );
+          onGenerateError?.(mdError);
+          throw mdError;
+        } finally {
+          setIsConverting(false);
+        }
       },
-      [markdown, theme, pdfOptions]
+      [
+        markdown,
+        theme,
+        pdfOptions,
+        onGenerateStart,
+        onGenerateComplete,
+        onGenerateError,
+      ]
     );
 
     // Expose imperative methods via ref
@@ -88,8 +146,9 @@ export const MdToPdfView = React.forwardRef<MdToPdfViewRef, MdToPdfViewProps>(
       () => ({
         getHtml: () => html,
         generatePdf: handleGeneratePdf,
+        isConverting,
       }),
-      [html, handleGeneratePdf]
+      [html, handleGeneratePdf, isConverting]
     );
 
     return (

@@ -98,6 +98,11 @@ interface ListToken {
   items: string[];
 }
 
+interface TaskListToken {
+  type: 'tasklist';
+  items: Array<{ checked: boolean; content: string }>;
+}
+
 interface TableToken {
   type: 'table';
   headers: string[];
@@ -112,6 +117,7 @@ type BlockToken =
   | BlockquoteToken
   | HorizontalRuleToken
   | ListToken
+  | TaskListToken
   | TableToken;
 
 // ─── Tokenizer ──────────────────────────────────────────────────────────────
@@ -243,6 +249,24 @@ function tokenize(lines: string[]): BlockToken[] {
       continue;
     }
 
+    // ── Task list (- [x] / - [ ]) ──────────────────────────────────
+    if (/^[-*+]\s+\[[ xX]\]\s+/.test(trimmed)) {
+      const taskItems: Array<{ checked: boolean; content: string }> = [];
+      while (
+        i < lines.length &&
+        lines[i]!.trim() !== '' &&
+        /^[-*+]\s+\[[ xX]\]\s+/.test(lines[i]!.trim())
+      ) {
+        const taskLine = lines[i]!.trim();
+        const checked = /^[-*+]\s+\[[xX]\]\s+/.test(taskLine);
+        const content = taskLine.replace(/^[-*+]\s+\[[ xX]\]\s+/, '');
+        taskItems.push({ checked, content });
+        i++;
+      }
+      tokens.push({ type: 'tasklist', items: taskItems });
+      continue;
+    }
+
     // ── Unordered list ───────────────────────────────────────────────
     if (/^[-*+]\s+/.test(trimmed)) {
       const items: string[] = [];
@@ -271,6 +295,26 @@ function tokenize(lines: string[]): BlockToken[] {
       }
       tokens.push({ type: 'list', ordered: true, items });
       continue;
+    }
+
+    // ── Setext heading (must come before paragraph fallback) ────────
+    if (
+      i + 1 < lines.length &&
+      trimmed !== '' &&
+      !trimmed.startsWith('#') &&
+      !trimmed.startsWith('>')
+    ) {
+      const nextTrimmed = lines[i + 1]!.trim();
+      if (/^=+$/.test(nextTrimmed) && nextTrimmed.length >= 2) {
+        tokens.push({ type: 'heading', level: 1, content: trimmed });
+        i += 2; // consume text line + underline
+        continue;
+      }
+      if (/^-+$/.test(nextTrimmed) && nextTrimmed.length >= 2) {
+        tokens.push({ type: 'heading', level: 2, content: trimmed });
+        i += 2;
+        continue;
+      }
     }
 
     // ── Paragraph (default) ──────────────────────────────────────────
@@ -338,6 +382,20 @@ function renderToken(token: BlockToken): string {
         .map((item) => `<li>${parseInline(item)}</li>`)
         .join('\n');
       return `<${tag}>\n${items}\n</${tag}>`;
+    }
+
+    case 'tasklist': {
+      const items = token.items
+        .map(({ checked, content }) => {
+          const checkbox = checked
+            ? `<input type="checkbox" disabled checked />`
+            : `<input type="checkbox" disabled />`;
+          return `<li class="task-item">${checkbox} ${parseInline(
+            content
+          )}</li>`;
+        })
+        .join('\n');
+      return `<ul class="task-list">\n${items}\n</ul>`;
     }
 
     case 'table': {
