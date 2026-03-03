@@ -393,9 +393,14 @@ describe('MdToPdfError', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('buildPageCss', () => {
-  it('returns empty string when no options given', () => {
-    expect(buildPageCss()).toBe('');
-    expect(buildPageCss(undefined)).toBe('');
+  it('returns a default A4 @page rule when no options are given', () => {
+    // buildPageCss always emits a rule — no early return on undefined
+    const css = buildPageCss();
+    expect(css).toContain('@page');
+    expect(css).toContain('210mm 297mm'); // default A4
+    expect(css).toContain('20mm'); // default margins
+    const css2 = buildPageCss(undefined);
+    expect(css2).toContain('@page');
   });
 
   it('generates @page CSS with default A4 size', () => {

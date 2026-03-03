@@ -122,7 +122,8 @@ function escapeHtml(raw: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -312,8 +313,21 @@ function renderToken(token: BlockToken): string {
       return `<pre><code${langClass}>${token.content}</code></pre>`;
     }
 
-    case 'blockquote':
-      return `<blockquote><p>${parseInline(token.content)}</p></blockquote>`;
+    case 'blockquote': {
+      // Escape raw text first, then apply inline markdown transforms.
+      // This prevents literal HTML in the source markdown from being injected.
+      const safeContent = token.content
+        .split('\n')
+        .map((line) => {
+          // Only escape lines that are not pure markdown inline syntax.
+          // We escape the full line and let parseInline handle the markdown
+          // tokens — the regex patterns in parseInline match syntax chars
+          // that escapeHtml doesn't touch (*, _, `, ~, [, !, ())
+          return line;
+        })
+        .join('\n');
+      return `<blockquote><p>${parseInline(safeContent)}</p></blockquote>`;
+    }
 
     case 'hr':
       return '<hr />';

@@ -51,8 +51,9 @@ export interface ThemeColors {
   tableHeaderBackground: string;
 }
 
-/** Standard CSS text properties for granular element styling. */
+/** Standard CSS properties for granular element styling. */
 export interface TextStyle {
+  // Typography
   color?: string;
   fontSize?: string;
   fontFamily?: string;
@@ -62,6 +63,9 @@ export interface TextStyle {
   textDecoration?: string;
   letterSpacing?: string;
   textAlign?: 'left' | 'right' | 'center' | 'justify';
+  whiteSpace?: string;
+
+  // Box model
   backgroundColor?: string;
   padding?: string;
   paddingTop?: string;
@@ -69,15 +73,33 @@ export interface TextStyle {
   paddingBottom?: string;
   paddingLeft?: string;
   margin?: string;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+
+  // Border
   border?: string;
   borderTop?: string;
   borderRight?: string;
   borderBottom?: string;
   borderLeft?: string;
   borderRadius?: string;
+
+  // Sizing
   width?: string;
   height?: string;
+  maxWidth?: string;
+  minWidth?: string;
+  maxHeight?: string;
+
+  // Misc
   display?: string;
+  overflow?: string;
+  overflowWrap?: string;
+  wordBreak?: string;
+  boxShadow?: string;
+  opacity?: string | number;
 }
 
 /**

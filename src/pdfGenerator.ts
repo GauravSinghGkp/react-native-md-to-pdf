@@ -49,6 +49,10 @@ async function requireExpoFileSystem(): Promise<{
     options: { encoding: string }
   ) => Promise<string>;
   copyAsync: (options: { from: string; to: string }) => Promise<void>;
+  deleteAsync: (
+    uri: string,
+    options?: { idempotent?: boolean }
+  ) => Promise<void>;
   documentDirectory: string | null;
   cacheDirectory: string | null;
   EncodingType: { Base64: string };
@@ -170,6 +174,12 @@ export async function generatePdf(
           to: destination,
         });
         filePath = destination;
+        // Clean up the expo-print temp file — non-fatal if it fails
+        try {
+          await FileSystem.deleteAsync(printResult.uri, { idempotent: true });
+        } catch {
+          // best-effort cleanup; do not surface to caller
+        }
       } catch (copyError: unknown) {
         const message =
           copyError instanceof Error
@@ -189,6 +199,12 @@ export async function generatePdf(
           to: destination,
         });
         filePath = destination;
+        // Clean up the expo-print temp file — non-fatal if it fails
+        try {
+          await FileSystem.deleteAsync(printResult.uri, { idempotent: true });
+        } catch {
+          // best-effort cleanup; do not surface to caller
+        }
       } catch {
         // If rename fails, keep the original path — non-critical
         filePath = printResult.uri;

@@ -1,3 +1,12 @@
 *.pbxproj -text
 # specific for windows script files
 *.bat text eol=crlf
+# enforce LF for all source files (prevents CRLF prettier errors on Windows)
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf

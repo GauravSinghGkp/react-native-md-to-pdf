@@ -43,7 +43,25 @@ export const DEFAULT_THEME: Required<
 // ─── Theme Merging ──────────────────────────────────────────────────────────
 
 /** Deep-merge user overrides on top of the default theme. */
-export function mergeTheme(overrides?: ThemeConfig): typeof DEFAULT_THEME {
+export function mergeTheme(
+  overrides?: ThemeConfig
+): typeof DEFAULT_THEME &
+  Pick<
+    ThemeConfig,
+    | 'h1'
+    | 'h2'
+    | 'h3'
+    | 'h4'
+    | 'h5'
+    | 'h6'
+    | 'p'
+    | 'a'
+    | 'img'
+    | 'table'
+    | 'blockquote'
+    | 'code'
+    | 'pre'
+  > {
   if (!overrides) return DEFAULT_THEME;
 
   return {
@@ -55,6 +73,20 @@ export function mergeTheme(overrides?: ThemeConfig): typeof DEFAULT_THEME {
       ...DEFAULT_THEME.colors,
       ...overrides.colors,
     },
+    // Element-level overrides passthrough
+    h1: overrides.h1,
+    h2: overrides.h2,
+    h3: overrides.h3,
+    h4: overrides.h4,
+    h5: overrides.h5,
+    h6: overrides.h6,
+    p: overrides.p,
+    a: overrides.a,
+    img: overrides.img,
+    table: overrides.table,
+    blockquote: overrides.blockquote,
+    code: overrides.code,
+    pre: overrides.pre,
   };
 }
 
@@ -110,26 +142,26 @@ export function buildStylesheet(theme?: ThemeConfig): string {
   }
   h1 { font-size: 2em; border-bottom: 2px solid ${
     c.rule
-  }; padding-bottom: 0.3em; ${toCss(theme?.h1)} }
+  }; padding-bottom: 0.3em; ${toCss(t.h1)} }
   h2 { font-size: 1.5em; border-bottom: 1px solid ${
     c.rule
-  }; padding-bottom: 0.25em; ${toCss(theme?.h2)} }
-  h3 { font-size: 1.25em; ${toCss(theme?.h3)} }
-  h4 { font-size: 1em; ${toCss(theme?.h4)} }
-  h5 { font-size: 0.875em; ${toCss(theme?.h5)} }
-  h6 { font-size: 0.85em; color: ${c.blockquoteText}; ${toCss(theme?.h6)} }
+  }; padding-bottom: 0.25em; ${toCss(t.h2)} }
+  h3 { font-size: 1.25em; ${toCss(t.h3)} }
+  h4 { font-size: 1em; ${toCss(t.h4)} }
+  h5 { font-size: 0.875em; ${toCss(t.h5)} }
+  h6 { font-size: 0.85em; color: ${c.blockquoteText}; ${toCss(t.h6)} }
 
   /* ── Paragraphs ──────────────────────────────────────────────────── */
   p {
     margin-bottom: 1em;
-    ${toCss(theme?.p)}
+    ${toCss(t.p)}
   }
 
   /* ── Links ───────────────────────────────────────────────────────── */
   a {
     color: ${c.link};
     text-decoration: none;
-    ${toCss(theme?.a)}
+    ${toCss(t.a)}
   }
   a:hover { text-decoration: underline; }
 
@@ -141,7 +173,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     color: ${c.code};
     padding: 0.15em 0.4em;
     border-radius: 4px;
-    ${toCss(theme?.code)}
+    ${toCss(t.code)}
   }
 
   pre {
@@ -150,7 +182,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     padding: 1em;
     overflow-x: auto;
     margin-bottom: 1em;
-    ${toCss(theme?.pre)}
+    ${toCss(t.pre)}
   }
   pre code {
     background: none;
@@ -167,7 +199,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     color: ${c.blockquoteText};
     background: ${c.codeBackground};
     border-radius: 0 6px 6px 0;
-    ${toCss(theme?.blockquote)}
+    ${toCss(t.blockquote)}
   }
   blockquote p { margin-bottom: 0; }
 
@@ -193,7 +225,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 1em;
-    ${toCss(theme?.table)}
+    ${toCss(t.table)}
   }
   th, td {
     border: 1px solid ${c.tableBorder};
@@ -214,7 +246,7 @@ export function buildStylesheet(theme?: ThemeConfig): string {
     height: auto;
     border-radius: 6px;
     margin: 0.5em 0;
-    ${toCss(theme?.img)}
+    ${toCss(t.img)}
   }
 
   /* ── Strikethrough ───────────────────────────────────────────────── */
@@ -249,20 +281,20 @@ const DEFAULT_MARGINS: MarginConfig = {
 /**
  * Build a `@page` CSS rule from PDF options.
  *
- * Controls page size, orientation, and margins in the generated PDF.
+ * Always emits an `@page` rule — defaults to A4 portrait with 20mm margins
+ * when called with no arguments, ensuring consistent output regardless of
+ * whether `PdfOptions` is passed.
  */
 export function buildPageCss(options?: PdfOptions): string {
-  if (!options) return '';
-
   const parts: string[] = [];
 
   // Page size + orientation
-  const size = PAGE_SIZE_MAP[options.pageSize ?? 'A4'] ?? PAGE_SIZE_MAP.A4!;
-  const orientation = options.orientation === 'landscape' ? ' landscape' : '';
+  const size = PAGE_SIZE_MAP[options?.pageSize ?? 'A4'] ?? PAGE_SIZE_MAP.A4!;
+  const orientation = options?.orientation === 'landscape' ? ' landscape' : '';
   parts.push(`size: ${size}${orientation};`);
 
-  // Margins
-  const m = { ...DEFAULT_MARGINS, ...options.margins };
+  // Margins (merge user overrides on top of defaults)
+  const m = { ...DEFAULT_MARGINS, ...options?.margins };
   parts.push(`margin: ${m.top} ${m.right} ${m.bottom} ${m.left};`);
 
   return `<style>@page { ${parts.join(' ')} }</style>`;
