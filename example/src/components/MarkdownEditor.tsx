@@ -52,7 +52,7 @@ export function MarkdownEditor({
         </View>
       </View>
       <TextInput
-        style={[styles.input, style, { textAlignVertical: 'top' }]}
+        style={[styles.input, style]}
         value={value}
         onChangeText={onChange}
         multiline
@@ -98,5 +98,6 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    textAlignVertical: 'top',
   },
 });

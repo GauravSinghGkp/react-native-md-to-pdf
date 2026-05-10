@@ -40,7 +40,7 @@ export function Toolbar({
           onPress={() => onSelectTheme(undefined)}
           activeOpacity={0.8}
         >
-          <View style={[styles.colorDot, { backgroundColor: '#888' }]} />
+          <View style={[styles.colorDot, styles.defaultColorDot]} />
           <Text
             style={[
               styles.themeText,
@@ -136,6 +136,9 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     marginRight: 6,
+  },
+  defaultColorDot: {
+    backgroundColor: '#888',
   },
   themeText: {
     fontSize: 14,
